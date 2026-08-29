@@ -100,7 +100,10 @@ const upload = multer({
   }
 });
 
-const uri = "mongodb+srv://Admin:Hustlebase@hustle-base.goii2xv.mongodb.net/?retryWrites=true&w=majority&appName=Hustle-Base";
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  throw new Error('MONGODB_URI is not set. Add it to your environment variables.');
+}
 const client = new MongoClient(uri);
 const jwtSecret = process.env.JWT_SECRET;
 const cronSecret = process.env.CRON_SECRET;
