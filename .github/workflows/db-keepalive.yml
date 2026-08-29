@@ -1,0 +1,23 @@
+name: DB Keepalive Ping
+
+on:
+  schedule:
+    # Runs daily at 03:00 UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render DB keepalive endpoint
+        env:
+          BASE_URL: https://hustle-baze-backend.onrender.com
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "CRON_SECRET is not set in GitHub repository secrets."
+            exit 1
+          fi
+          curl -fsS "${BASE_URL}/api/cron/ping-db?secret=${CRON_SECRET}"
