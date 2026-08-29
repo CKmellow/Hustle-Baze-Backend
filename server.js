@@ -103,6 +103,7 @@ const upload = multer({
 const uri = "mongodb+srv://Admin:Hustlebase@hustle-base.goii2xv.mongodb.net/?retryWrites=true&w=majority&appName=Hustle-Base";
 const client = new MongoClient(uri);
 const jwtSecret = process.env.JWT_SECRET;
+const cronSecret = process.env.CRON_SECRET;
 // console.log("Loaded JWT Secret:", jwtSecret);
 
 
@@ -137,6 +138,33 @@ const authMiddleware = async (req, res, next) => {
 // Verify if token is still valid
 app.get('/api/verify-token', authMiddleware, async (req, res) => {
   return res.status(200).json({ success: true, message: 'Token is valid' });
+});
+
+// Daily keepalive endpoint for Render Cron Job.
+app.get('/api/cron/ping-db', async (req, res) => {
+  try {
+    const incomingSecret = req.headers['x-cron-secret'];
+    const querySecret = req.query.secret;
+    const providedSecret = incomingSecret || querySecret;
+
+    // If CRON_SECRET is configured, require it for this endpoint.
+    if (cronSecret && providedSecret !== cronSecret) {
+      return res.status(401).json({ success: false, message: 'Unauthorized cron request' });
+    }
+
+    const db = await connectToDb();
+    const pingResult = await db.command({ ping: 1 });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Database ping successful',
+      ping: pingResult,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error in /api/cron/ping-db:', error);
+    return res.status(500).json({ success: false, message: 'Database ping failed' });
+  }
 });
 
 // POST: Secure Login
